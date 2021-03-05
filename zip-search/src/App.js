@@ -1,87 +1,92 @@
 import React, { Component } from 'react';
 import './App.css';
-
-
-function City(props) {
+function City({name, state, population}) {
   return (
-    <div>
-      <h5>{`${props.cityInfo.City}, ${props.cityInfo.State}`}</h5>
-      <ul>
-        <li>{`State: ${props.cityInfo.State}`}</li>
-        <li>{`Location: (${props.cityInfo.Lat}, ${props.cityInfo.Long})`}</li>
-        <li>{`Population (estimated): ${props.cityInfo.EstimatedPopulation}`}</li>
-        <li>{`Total Wages: ${props.cityInfo.TotalWages}`}</li>
-      </ul>
+    <div className="card mb-4">
+      <div className="card-header">
+        { name }
+      </div>
+      <div className="card-body">
+        <ul>
+          <li>{name}, {state}</li>
+          <li>Population: {population}</li>
+        </ul>
+      </div>
     </div>
   );
 }
-
-function ZipSearchField({ onZipChange }) {
+function ZipSearchField({zipCode, onChange}) {
   return (
     <div>
-      <label>Zip Code:</label>
-      <input type="text" onChange={onZipChange} />
+      <form className="form-inline my-4">
+        <label>Zip Code:</label>
+        <input
+          type="text"
+          className="form-control ml-2"
+          value={zipCode}
+          onChange={onChange}
+        />
+      </form>
     </div>
   );
 }
-
-
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      cities: [],
       zipCode: '',
-      citiesInfo:[],
       validZip: false,
+
     }
   }
-
-  // Passed as a prop to ZipSearchField
-  zipChanged(e) {
-    // Make GET request for the zip resource
-    // then, when you receive the result, store it in state
-    fetch('http://ctp-zip-api.herokuapp.com/zip/' + e.target.value)
-      .then(res => res.json())
-      .then(body => {
+  zipChanged(event) {
+    let zip = event.target.value;
+    console.log(zip);
+    fetch(`http://ctp-zip-api.herokuapp.com/zip/${zip}`)
+      .then((res) => res.json())
+      .then((body) => {
         console.log(body);
-        for (let i = 0; i < body.length; i++) {
-          // console.log(body[i].City);
-          this.setState({
-            validZip: true,
-            citiesInfo : [...this.state.citiesInfo, body[i]],
-          });
-        }
-        // console.log(this.state.cities);
+        this.setState({
+          cities: body,
+          validZip : true,
+        })
       })
-      .catch(err => {
-        this.setState({ validZip: false });
-        console.log(err)
+      .catch((err) => {
+        console.log(err);
+        this.setState({validZip: false})
       })
-
     this.setState({
-      zipCode: e.target.value
-    });
-    
+      zipCode: event.target.value
+    })
   }
-
-
   render() {
     return (
       <div className="App">
         <div className="App-header">
           <h2>Zip Code Search</h2>
         </div>
-        {/* if zip search field has changed, call zipChanged function, and pass event in */}
-        <ZipSearchField onZipChange={(e) => this.zipChanged(e)}/>
-        <div>
-          {/*
-            Instead of hardcoding the following 3 cities,
-            Create them dynamically from this.state.cities
-          */}
-          
-          {this.state.citiesInfo.map( (eachCity) => (
-            <City cityInfo={eachCity}/>
-          ))}
+        <div className="container">
+          <div className="row">
+            <div className="col">
+              <ZipSearchField
+                zipCode={this.state.zipCode}
+                onChange={(e) => this.zipChanged(e)}
+              />
+            </div>
+          </div>
+          {
+            this.state.cities.map((c) => {
+              return (
+                <div className="row">
+                  <div className="col">
+                      {this.state.validZip ? <City name={c.City} state={c.State} population={c.EstimatedPopulation} wages={c.TotalWages} /> : 'Cities not found'}
+
+                  </div>
+                </div>
+              )
+            })
+          }
         </div>
       </div>
     );
@@ -89,3 +94,11 @@ class App extends Component {
 }
 
 export default App;
+/*
+npm install -g npm@latest
+TODO:
+- Display more data about each city
+- remove results when extra characters are typed
+- display "no results" if the zip is incorrect instead of empty
+- add checks to prevent multiple requests if we know zip is invalid format
+*/
