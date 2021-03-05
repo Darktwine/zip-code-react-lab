@@ -1,15 +1,16 @@
 import React, { Component } from 'react';
 import './App.css';
-function City({name, state, population}) {
+
+function City({data}) {
   return (
     <div className="card mb-4">
       <div className="card-header">
-        { name }
+        { data.City }
       </div>
       <div className="card-body">
         <ul>
-          <li>{name}, {state}</li>
-          <li>Population: {population}</li>
+          <li>State: {data.state}</li>
+          <li>Location: ({data.Lat}, {data.Long})</li>
         </ul>
       </div>
     </div>
@@ -36,26 +37,30 @@ class App extends Component {
     this.state = {
       cities: [],
       zipCode: '',
-      validZip: false,
-
     }
   }
   zipChanged(event) {
     let zip = event.target.value;
     console.log(zip);
-    fetch(`http://ctp-zip-api.herokuapp.com/zip/${zip}`)
-      .then((res) => res.json())
-      .then((body) => {
-        console.log(body);
-        this.setState({
-          cities: body,
-          validZip : true,
+    if (zip.length === 5) {
+      fetch(`http://ctp-zip-api.herokuapp.com/zip/${zip}`)
+        .then((res) => res.json())
+        .then((body) => {
+          console.log(body);
+          this.setState({
+            cities: body,
+          })
         })
+        .catch((err) => {
+          console.log(err);
+          this.setState({cities: []})
+        })
+    } else {
+      this.setState({
+        cities: []
       })
-      .catch((err) => {
-        console.log(err);
-        this.setState({validZip: false})
-      })
+    }
+
     this.setState({
       zipCode: event.target.value
     })
@@ -76,16 +81,17 @@ class App extends Component {
             </div>
           </div>
           {
-            this.state.cities.map((c) => {
-              return (
-                <div className="row">
-                  <div className="col">
-                      {this.state.validZip ? <City name={c.City} state={c.State} population={c.EstimatedPopulation} wages={c.TotalWages} /> : 'Cities not found'}
-
+            this.state.cities.length === 0
+              ? <h1>No Results</h1>
+              : this.state.cities.map((c, index) => {
+                return (
+                  <div className="row" key={index}>
+                    <div className="col">
+                      <City data={c} />
+                    </div>
                   </div>
-                </div>
-              )
-            })
+                )
+              })
           }
         </div>
       </div>
